@@ -1,17 +1,20 @@
 import express from "express";
 import http from "http";
-import { Server as WebSocketServer } from "ws";
-import * as mediasoup from "mediasoup";
+import WebSocket from "ws";
+// import * as mediasoup from "mediasoup";
 
 const app = express();
 const server = http.createServer(app);
-const wss = new WebSocketServer({ server });
+const wss = new WebSocket.WebSocketServer({ server });
 
 main();
 
 async function main() {
+
   // Mediasoup setup
+  /*
   const worker = await mediasoup.createWorker();
+
   let router = await worker.createRouter({
     mediaCodecs: [
       {
@@ -27,8 +30,7 @@ async function main() {
       },
     ],
   });
-
-  console.log(router);
+  */
 
   wss.on("connection", (ws) => {
     ws.on("message", async (message) => {
