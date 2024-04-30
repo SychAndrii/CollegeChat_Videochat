@@ -1,0 +1,13 @@
+{
+    "listenIps": [
+        {
+            "ip": "0.0.0.0",
+            "announcedIp": null
+        }
+    ],
+    "initialAvailableOutgoingBitrate": 1000000,
+    "minimumAvailableOutgoingBitrate": 300000,
+    "maximumIncomingBitrate": 1500000,
+    "enableTcp": true,
+    "preferUdp": true
+}
