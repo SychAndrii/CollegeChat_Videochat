@@ -26,6 +26,7 @@
     "noPropertyAccessFromIndexSignature": true // Require that properties of index signatures are accessed using ['index'].
   },
   "include": [
-    "src/**/*" // Include all files in the src folder
+    "src/**/*", // Include all files in the src folder
+    "types/**/*"
   ]
 }

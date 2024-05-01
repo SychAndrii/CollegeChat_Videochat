@@ -5,20 +5,14 @@ export type createEmptyLobbyWithCodeContract = string;
 export type deleteLobbyWithCodeContract = string;
 
 export interface addConnectionToLobbyContract {
-    lobby: {
-        code: string;
-    };
-    connection: {
-        id: string;
+    lobbyCode: string;
+    connectionID: string;
+    domain: {
         name: string;
     }
 }
 
 export interface removeConnectionFromLobbyContract {
-    lobby: {
-        code: string;
-    };
-    connection: {
-        id: string;
-    }
+    lobbyCode: string;
+    connectionID: string;
 }
