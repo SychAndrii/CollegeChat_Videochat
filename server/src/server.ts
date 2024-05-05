@@ -1,49 +1,27 @@
 import express from "express";
-import http from "http";
-import WebSocket from "ws";
-// import * as mediasoup from "mediasoup";
+import { createServer } from "http";
+import { Server } from "socket.io";
+import defineRoutes from "./routing/routes";
+import AppRouter from "./routing/AppRouter";
 
 const app = express();
-const server = http.createServer(app);
-const wss = new WebSocket.WebSocketServer({ server });
+const httpServer = createServer(app);
+const io = new Server(httpServer);
 
 main();
 
 async function main() {
+  await activateRoutes();
+  startHttpServer();
+}
 
-  // Mediasoup setup
-  /*
-  const worker = await mediasoup.createWorker();
+async function activateRoutes() {
+  const appRouter = new AppRouter(io);
+  await appRouter.configureRoutes(defineRoutes);
+}
 
-  let router = await worker.createRouter({
-    mediaCodecs: [
-      {
-        kind: "audio",
-        mimeType: "audio/opus",
-        clockRate: 48000,
-        channels: 2,
-      },
-      {
-        kind: "video",
-        mimeType: "video/VP8",
-        clockRate: 90000,
-      },
-    ],
-  });
-  */
-
-  wss.on("connection", (ws) => {
-    ws.on("message", async (message) => {
-      // Handle incoming messages and mediasoup signaling here
-      console.log("Received message:", message);
-    });
-
-    ws.on("close", () => {
-      console.log("WebSocket connection closed");
-    });
-  });
-
-  server.listen(3000, () => {
+function startHttpServer() {
+  httpServer.listen(3000, () => {
     console.log("Server is running on http://localhost:3000");
   });
 }
