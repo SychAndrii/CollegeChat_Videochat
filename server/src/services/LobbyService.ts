@@ -5,24 +5,21 @@ import {
   WebRtcTransportOptions,
 } from "mediasoup/node/lib/types";
 
-import {
-  getLobbyByCodeContract,
-  createEmptyLobbyWithCodeContract,
-} from "../contracts/LobbyService";
-
 import LobbyEnvironment from "../models/LobbyEnvironment";
 import DomainConnectionData from "../models/DomainConnectionData";
+
 import {
   ConnectTransportDTO,
-  GetRtpCapabilitiesDTO,
-  CreateTransportDTO,
-  JoinLobbyDTO,
-  CreateNewProducerDTO,
   CreateNewConsumerDTO,
-  StopProducerDTO,
-  ResumeProducerDTO,
+  CreateNewProducerDTO,
+  CreateTransportDTO,
+  GetRtpCapabilitiesDTO,
+  JoinLobbyDTO,
   LeaveLobbyDTO,
-} from "../contracts/client";
+  PauseProducerDTO,
+  ResumeProducerDTO,
+} from "../contracts/LobbyService";
+
 const codecSettings: RtpCodecCapability[] = require("../settings/codecSettings.json");
 const transportOptions: WebRtcTransportOptions = require("../settings/transportOptions.json");
 
@@ -35,17 +32,9 @@ class LobbyService {
     this.lobbies = new Map();
   }
 
-  async getLobbyRtpCapabilities({ lobbyID }: GetRtpCapabilitiesDTO) {
-    const lobbyEnv = await this.getLobbyEnvByCode(lobbyID);
+  async getLobbyRtpCapabilities({ lobbyCode }: GetRtpCapabilitiesDTO) {
+    const lobbyEnv = await this.getLobbyEnvByCode(lobbyCode);
     return lobbyEnv.router.rtpCapabilities;
-  }
-
-  async getLobbyEnvByCode(dto: getLobbyByCodeContract) {
-    const lobbyEnv = this.lobbies.get(dto);
-    if (!lobbyEnv) {
-      throw new Error("Lobby not found");
-    }
-    return lobbyEnv;
   }
 
   async createNewConsumer(dto: CreateNewConsumerDTO) {
@@ -297,7 +286,7 @@ class LobbyService {
     }
   }
 
-  async stopProducer(dto: StopProducerDTO) {
+  async pauseProducer(dto: PauseProducerDTO) {
     const lobbyEnv = await this.getLobbyEnvByCode(dto.lobbyCode);
     const connection = lobbyEnv.connections.get(dto.connectionID);
 
@@ -353,12 +342,10 @@ class LobbyService {
     });
   }
 
-  private async createEmptyLobbyWithCode(
-    dto: createEmptyLobbyWithCodeContract
-  ) {
+  private async createEmptyLobbyWithCode(lobbyCode: string) {
     const router = await this.createRouter();
-    const lobbyEnvironemnt = new LobbyEnvironment(dto, router);
-    this.lobbies.set(dto, lobbyEnvironemnt);
+    const lobbyEnvironemnt = new LobbyEnvironment(lobbyCode, router);
+    this.lobbies.set(lobbyCode, lobbyEnvironemnt);
     return lobbyEnvironemnt;
   }
 
@@ -371,6 +358,14 @@ class LobbyService {
 
   private async createTransport(router: Router) {
     return await router.createWebRtcTransport(transportOptions);
+  }
+
+  private async getLobbyEnvByCode(lobbyCode: string) {
+    const lobbyEnv = this.lobbies.get(lobbyCode);
+    if (!lobbyEnv) {
+      throw new Error("Lobby not found");
+    }
+    return lobbyEnv;
   }
 }
 

@@ -1,189 +1,288 @@
-import { Socket } from "socket.io";
 import LobbyService from "../services/LobbyService";
+import LobbyClient from "../LobbyClient";
+
 import {
-  JoinLobbyDTO,
-  GetRtpCapabilitiesDTO,
-  ConnectTransportDTO,
-  CreateTransportDTO,
-  SharePersonalProducerDTO,
-  SetupPersonalConsumerDTO,
-  StopProducerDTO,
-  ResumeProducerDTO,
-  LeaveLobbyDTO,
+  ConnectTransportClientDTO,
+  JoinLobbyClientDTO,
+  PauseProducerClientDTO,
+  ResumeProducerClientDTO,
+  SetupPersonalConsumerClientDTO,
+  SharePersonalProducerClientDTO,
 } from "../contracts/client";
 
 class LobbyController {
   private lobbyService: LobbyService;
+  private lobbyClient: LobbyClient;
 
-  constructor(lobbyService: LobbyService) {
+  constructor(lobbyService: LobbyService, lobbyClient: LobbyClient) {
     this.lobbyService = lobbyService;
+    this.lobbyClient = lobbyClient;
   }
 
-  async getLobbyRtpCapabilities(socket: Socket, data: GetRtpCapabilitiesDTO) {
+  async getLobbyRtpCapabilities() {
     try {
+      const lobbyCode = this.lobbyClient.getLobbyCode()!;
+
+      const lobbyDTO = {
+        lobbyCode,
+      };
+
       const capabilities = await this.lobbyService.getLobbyRtpCapabilities(
-        data
+        lobbyDTO
       );
-      socket.emit("getLobbyRtpCapabilitiesSuccess", capabilities);
+      this.lobbyClient.sendToClient(
+        "getLobbyRtpCapabilitiesSuccess",
+        capabilities
+      );
     } catch (error) {
       const err = error as Error;
-      socket.emit("error", {
+      this.lobbyClient.sendToClient("error", {
         message: "Error getting capabilities: " + err.message,
       });
     }
   }
 
-  async joinLobby(socket: Socket, data: JoinLobbyDTO) {
+  async joinLobby(data: JoinLobbyClientDTO) {
     try {
-      const domainData = await this.lobbyService.joinLobby(data);
-      socket.join(data.lobbyCode);
-      socket
-        .to(data.lobbyCode)
-        .emit("connectionAttempt", JSON.stringify(domainData));
+      const connectionID = this.lobbyClient.getConnectionID();
 
-      socket.emit("joinLobbySuccess");
+      const lobbyDTO = {
+        ...data,
+        connectionID: connectionID,
+      };
+
+      const domainData = await this.lobbyService.joinLobby(lobbyDTO);
+
+      this.lobbyClient.joinLobby(data.lobbyCode);
+      this.lobbyClient.broadcastToLobby(
+        "newConnection",
+        JSON.stringify(domainData)
+      );
+      this.lobbyClient.sendToClient("joinLobbySuccess");
     } catch (error) {
       const err = error as Error;
-      socket.emit("error", {
+      this.lobbyClient.sendToClient("error", {
         message: "Error joining lobby: " + err.message,
       });
     }
   }
 
-  async createProducerTransport(socket: Socket, data: CreateTransportDTO) {
+  async createProducerTransport() {
     try {
-      const producerTransportParameters =
-        await this.lobbyService.createProducerTransport(data);
+      const lobbyCode = this.lobbyClient.getLobbyCode()!;
+      const connectionID = this.lobbyClient.getConnectionID();
 
-      socket.emit(
+      const lobbyDTO = {
+        connectionID,
+        lobbyCode,
+      };
+
+      const producerTransportParameters =
+        await this.lobbyService.createProducerTransport(lobbyDTO);
+
+      this.lobbyClient.sendToClient(
         "createProducerTransportSuccess",
         producerTransportParameters
       );
     } catch (error) {
       const err = error as Error;
-      socket.emit("error", {
+      this.lobbyClient.sendToClient("error", {
         message: "Error creating producer transport: " + err.message,
       });
     }
   }
 
-  async createConsumerTransport(socket: Socket, data: CreateTransportDTO) {
+  async createConsumerTransport() {
     try {
-      const consumerTransportParameters =
-        await this.lobbyService.createConsumerTransport(data);
+      const lobbyCode = this.lobbyClient.getLobbyCode()!;
+      const connectionID = this.lobbyClient.getConnectionID();
 
-      socket.emit(
+      const lobbyDTO = {
+        connectionID,
+        lobbyCode,
+      };
+
+      const consumerTransportParameters =
+        await this.lobbyService.createConsumerTransport(lobbyDTO);
+
+      this.lobbyClient.sendToClient(
         "createConsumerTransportSuccess",
         consumerTransportParameters
       );
     } catch (error) {
       const err = error as Error;
-      socket.emit("error", {
+      this.lobbyClient.sendToClient("error", {
         message: "Error creating consumer transport: " + err.message,
       });
     }
   }
 
-  async connectProducerTransport(socket: Socket, data: ConnectTransportDTO) {
+  async connectProducerTransport(data: ConnectTransportClientDTO) {
     try {
-      await this.lobbyService.connectProducerTransport(data);
-      socket.emit("connectProducerTransportSuccess");
+      const lobbyCode = this.lobbyClient.getLobbyCode()!;
+      const connectionID = this.lobbyClient.getConnectionID();
+      const lobbyDTO = {
+        ...data,
+        connectionID,
+        lobbyCode,
+      };
+
+      await this.lobbyService.connectProducerTransport(lobbyDTO);
+      this.lobbyClient.sendToClient("connectProducerTransportSuccess");
     } catch (error) {
       const err = error as Error;
-      socket.emit("error", {
+      this.lobbyClient.sendToClient("error", {
         message: "Error connecting to producer transport: " + err.message,
       });
     }
   }
 
-  async connectConsumerTransport(socket: Socket, data: ConnectTransportDTO) {
+  async connectConsumerTransport(data: ConnectTransportClientDTO) {
     try {
-      await this.lobbyService.connectConsumerTransport(data);
-      socket.emit("connectConsumerTransportSuccess");
+      const lobbyCode = this.lobbyClient.getLobbyCode()!;
+      const connectionID = this.lobbyClient.getConnectionID();
+
+      const lobbyDTO = {
+        ...data,
+        connectionID,
+        lobbyCode,
+      };
+
+      await this.lobbyService.connectConsumerTransport(lobbyDTO);
+      this.lobbyClient.sendToClient("connectConsumerTransportSuccess");
     } catch (error) {
       const err = error as Error;
-      socket.emit("error", {
+      this.lobbyClient.sendToClient("error", {
         message: "Error connecting to consumer transport: " + err.message,
       });
     }
   }
 
-  async sharePersonalProducer(socket: Socket, data: SharePersonalProducerDTO) {
+  async sharePersonalProducer(data: SharePersonalProducerClientDTO) {
     try {
+      const connectionID = this.lobbyClient.getConnectionID();
+      const lobbyCode = this.lobbyClient.getLobbyCode()!;
+
+      const lobbyDTO = {
+        ...data,
+        connectionID,
+        lobbyCode,
+      };
+
       const { newProducerID, existingProducerIDs } =
-        await this.lobbyService.createNewProducer(data);
+        await this.lobbyService.createNewProducer(lobbyDTO);
 
-      socket
-        .to(data.lobbyCode)
-        .emit("receiveExternalProducer", { producerID: newProducerID });
-
-      socket.emit("sharePersonalProducerSuccess", existingProducerIDs);
+      this.lobbyClient.broadcastToLobby("receiveExternalProducer", {
+        producerID: newProducerID,
+      });
+      this.lobbyClient.sendToClient(
+        "sharePersonalProducerSuccess",
+        existingProducerIDs
+      );
     } catch (error) {
       const err = error as Error;
-      socket.emit("error", {
+      this.lobbyClient.sendToClient("error", {
         message: "Error creating a producer: " + err.message,
       });
     }
   }
 
-  async setupPersonalConsumer(socket: Socket, data: SetupPersonalConsumerDTO) {
+  async setupPersonalConsumer(data: SetupPersonalConsumerClientDTO) {
     try {
+      const connectionID = this.lobbyClient.getConnectionID();
+      const lobbyCode = this.lobbyClient.getLobbyCode()!;
+
+      const lobbyDTO = {
+        ...data,
+        connectionID,
+        lobbyCode,
+      };
+
       const consumerParameters = await this.lobbyService.createNewConsumer(
-        data
+        lobbyDTO
       );
-      socket.emit("setupPersonalConsumer", consumerParameters);
+      this.lobbyClient.sendToClient(
+        "setupPersonalConsumer",
+        consumerParameters
+      );
     } catch (error) {
       const err = error as Error;
-      socket.emit("error", {
+      this.lobbyClient.sendToClient("error", {
         message: "Error setting up a consumer: " + err.message,
       });
     }
   }
 
-  async stopProducer(socket: Socket, data: StopProducerDTO) {
+  async pauseProducer(data: PauseProducerClientDTO) {
     try {
-      await this.lobbyService.stopProducer(data);
-      socket
-        .to(data.lobbyCode)
-        .emit("producerStopped", { producerID: data.producerID });
+      const lobbyCode = this.lobbyClient.getLobbyCode()!;
+      const connectionID = this.lobbyClient.getConnectionID();
 
-      socket.emit("stopProducerSuccess");
+      const lobbyDTO = {
+        ...data,
+        connectionID,
+        lobbyCode,
+      };
+
+      await this.lobbyService.pauseProducer(lobbyDTO);
+
+      this.lobbyClient.broadcastToLobby("producerStopped", {
+        producerID: data.producerID,
+      });
+      this.lobbyClient.sendToClient("stopProducerSuccess");
     } catch (error) {
       const err = error as Error;
-      socket.emit("error", {
+      this.lobbyClient.sendToClient("error", {
         message: "Error stopping up a producer: " + err.message,
       });
     }
   }
 
-  async resumeProducer(socket: Socket, data: ResumeProducerDTO) {
+  async resumeProducer(data: ResumeProducerClientDTO) {
     try {
-      await this.lobbyService.resumeProducer(data);
-      socket
-        .to(data.lobbyCode)
-        .emit("producerResumed", { producerID: data.producerID });
+      const lobbyCode = this.lobbyClient.getLobbyCode()!;
+      const connectionID = this.lobbyClient.getConnectionID();
 
-      socket.emit("resumeProducerSuccess");
+      const lobbyDTO = {
+        ...data,
+        connectionID,
+        lobbyCode,
+      };
+
+      await this.lobbyService.resumeProducer(lobbyDTO);
+
+      this.lobbyClient.broadcastToLobby("producerResumed", {
+        producerID: data.producerID,
+      });
+      this.lobbyClient.sendToClient("resumeProducerSuccess");
     } catch (error) {
       const err = error as Error;
-      socket.emit("error", {
+      this.lobbyClient.sendToClient("error", {
         message: "Error resuming up a producer: " + err.message,
       });
     }
   }
 
-  async leaveLobby(socket: Socket, data: LeaveLobbyDTO) {
+  async leaveLobby() {
     try {
-      await this.lobbyService.leaveLobby(data);
-      socket.leave(data.lobbyCode);
-      socket
-        .to(data.lobbyCode)
-        .emit("disconnect");
+      const lobbyCode = this.lobbyClient.getLobbyCode()!;
+      const connectionID = this.lobbyClient.getConnectionID();
 
-      socket.emit("leaveLobbySuccess");
+      const lobbyDTO = {
+        connectionID,
+        lobbyCode,
+      };
+
+      await this.lobbyService.leaveLobby(lobbyDTO);
+
+      this.lobbyClient.leaveLobby();
+      this.lobbyClient.broadcastToLobby("disconnect", {
+        connectionID: connectionID,
+      });
+      this.lobbyClient.sendToClient("leaveLobbySuccess");
     } catch (error) {
       const err = error as Error;
-      socket.emit("error", {
+      this.lobbyClient.sendToClient("error", {
         message: "Error leaving lobby: " + err.message,
       });
     }
