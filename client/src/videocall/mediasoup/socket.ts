@@ -1,13 +1,15 @@
 import { io, Socket } from "socket.io-client";
 
+import newConnection from "./handlers/newConnection";
+
 let socket: Socket | null = null;
 
 // Initialize or return the existing socket
 export const getSocket = () => {
   if (!socket) {
     socket = io();
-    // Optionally set up event listeners here
-    console.log("Socket initialized");
+
+    socket.on("newConnection", newConnection);
   }
   return socket;
 };
