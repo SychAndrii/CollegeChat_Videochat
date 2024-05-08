@@ -10,6 +10,11 @@ export interface JoinLobbyDTO {
   };
 }
 
+export interface GetExistingLobbyProducersDTO {
+  lobbyCode: string;
+  connectionID: string;
+}
+
 export interface GetRtpCapabilitiesDTO {
   lobbyCode: string;
 }

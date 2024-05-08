@@ -3,11 +3,11 @@ import LobbyClient from "../LobbyClient";
 
 import {
   ConnectTransportClientDTO,
+  GetConsumerParametersClientDTO,
   JoinLobbyClientDTO,
   PauseProducerClientDTO,
   ResumeProducerClientDTO,
-  SetupPersonalConsumerClientDTO,
-  SharePersonalProducerClientDTO,
+  SendProducerParametersClientDTO,
 } from "../contracts/client";
 
 class LobbyController {
@@ -42,6 +42,31 @@ class LobbyController {
     }
   }
 
+  async getOtherLobbyProducers() {
+    try {
+      const lobbyCode = this.lobbyClient.getLobbyCode()!;
+      const connectionID = this.lobbyClient.getConnectionID();
+
+      const lobbyDTO = {
+        lobbyCode,
+        connectionID
+      };
+
+      const {existingProducers} = await this.lobbyService.getOtherLobbyProducers(
+        lobbyDTO
+      );
+      this.lobbyClient.sendToClient(
+        "getOtherLobbyProducersSuccess",
+        existingProducers
+      );
+    } catch (error) {
+      const err = error as Error;
+      this.lobbyClient.sendToClient("error", {
+        message: "Error getting lobby producers: " + err.message,
+      });
+    }
+  }
+
   async joinLobby(data: JoinLobbyClientDTO) {
     try {
       const connectionID = this.lobbyClient.getConnectionID();
@@ -54,10 +79,7 @@ class LobbyController {
       const domainData = await this.lobbyService.joinLobby(lobbyDTO);
 
       this.lobbyClient.joinLobby(data.lobbyCode);
-      this.lobbyClient.broadcastToLobby(
-        "newConnection",
-        JSON.stringify(domainData)
-      );
+      this.lobbyClient.broadcastToLobby("newConnection", domainData);
       this.lobbyClient.sendToClient("joinLobbySuccess");
     } catch (error) {
       const err = error as Error;
@@ -67,7 +89,7 @@ class LobbyController {
     }
   }
 
-  async createProducerTransport() {
+  async getProducerTransportParameters() {
     try {
       const lobbyCode = this.lobbyClient.getLobbyCode()!;
       const connectionID = this.lobbyClient.getConnectionID();
@@ -81,7 +103,7 @@ class LobbyController {
         await this.lobbyService.createProducerTransport(lobbyDTO);
 
       this.lobbyClient.sendToClient(
-        "createProducerTransportSuccess",
+        "getProducerTransportParametersSuccess",
         producerTransportParameters
       );
     } catch (error) {
@@ -92,7 +114,7 @@ class LobbyController {
     }
   }
 
-  async createConsumerTransport() {
+  async getConsumerTransportParameters() {
     try {
       const lobbyCode = this.lobbyClient.getLobbyCode()!;
       const connectionID = this.lobbyClient.getConnectionID();
@@ -106,7 +128,7 @@ class LobbyController {
         await this.lobbyService.createConsumerTransport(lobbyDTO);
 
       this.lobbyClient.sendToClient(
-        "createConsumerTransportSuccess",
+        "getConsumerTransportParametersSuccess",
         consumerTransportParameters
       );
     } catch (error) {
@@ -128,7 +150,7 @@ class LobbyController {
       };
 
       await this.lobbyService.connectProducerTransport(lobbyDTO);
-      this.lobbyClient.sendToClient("connectProducerTransportSuccess");
+      this.lobbyClient.sendToClient("connectToProducerTransportSuccess");
     } catch (error) {
       const err = error as Error;
       this.lobbyClient.sendToClient("error", {
@@ -149,7 +171,7 @@ class LobbyController {
       };
 
       await this.lobbyService.connectConsumerTransport(lobbyDTO);
-      this.lobbyClient.sendToClient("connectConsumerTransportSuccess");
+      this.lobbyClient.sendToClient("connectToConsumerTransportSuccess");
     } catch (error) {
       const err = error as Error;
       this.lobbyClient.sendToClient("error", {
@@ -158,7 +180,7 @@ class LobbyController {
     }
   }
 
-  async sharePersonalProducer(data: SharePersonalProducerClientDTO) {
+  async sendProducerParameters(data: SendProducerParametersClientDTO) {
     try {
       const connectionID = this.lobbyClient.getConnectionID();
       const lobbyCode = this.lobbyClient.getLobbyCode()!;
@@ -169,16 +191,16 @@ class LobbyController {
         lobbyCode,
       };
 
-      const { newProducerID, existingProducerIDs } =
-        await this.lobbyService.createNewProducer(lobbyDTO);
-
-      this.lobbyClient.broadcastToLobby("receiveExternalProducer", {
-        producerID: newProducerID,
-      });
-      this.lobbyClient.sendToClient(
-        "sharePersonalProducerSuccess",
-        existingProducerIDs
+      const { newProducerID } = await this.lobbyService.createNewProducer(
+        lobbyDTO
       );
+
+      this.lobbyClient.broadcastToLobby("receiveProducerParameters", {
+        newProducerID,
+      });
+      this.lobbyClient.sendToClient("sendProducerParametersSuccess", {
+        newProducerID,
+      });
     } catch (error) {
       const err = error as Error;
       this.lobbyClient.sendToClient("error", {
@@ -187,7 +209,7 @@ class LobbyController {
     }
   }
 
-  async setupPersonalConsumer(data: SetupPersonalConsumerClientDTO) {
+  async getConsumerParameters(data: GetConsumerParametersClientDTO) {
     try {
       const connectionID = this.lobbyClient.getConnectionID();
       const lobbyCode = this.lobbyClient.getLobbyCode()!;
@@ -202,7 +224,7 @@ class LobbyController {
         lobbyDTO
       );
       this.lobbyClient.sendToClient(
-        "setupPersonalConsumer",
+        "getConsumerParametersSuccess",
         consumerParameters
       );
     } catch (error) {

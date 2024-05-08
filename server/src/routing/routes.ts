@@ -17,9 +17,15 @@ export default function defineRoutes(
     )
 
     .addRouteWithMiddleware(
-      "createProducerTransport",
+      "getOtherLobbyProducers",
       [lobbyMiddleware.attemptedToJoinLobby],
-      lobbyController.createProducerTransport
+      lobbyController.getOtherLobbyProducers
+    )
+
+    .addRouteWithMiddleware(
+      "getProducerTransportParameters",
+      [lobbyMiddleware.attemptedToJoinLobby],
+      lobbyController.getProducerTransportParameters
     )
 
     .addRouteWithMiddleware(
@@ -29,9 +35,9 @@ export default function defineRoutes(
     )
 
     .addRouteWithMiddleware(
-      "createConsumerTransport",
+      "getConsumerTransportParameters",
       [lobbyMiddleware.attemptedToJoinLobby],
-      lobbyController.createConsumerTransport
+      lobbyController.getConsumerTransportParameters
     )
 
     .addRouteWithMiddleware(
@@ -41,15 +47,15 @@ export default function defineRoutes(
     )
 
     .addRouteWithMiddleware(
-      "sharePersonalProducer",
+      "sendProducerParameters",
       [lobbyMiddleware.attemptedToJoinLobby],
-      lobbyController.sharePersonalProducer
+      lobbyController.sendProducerParameters
     )
 
     .addRouteWithMiddleware(
-      "setupPersonalConsumer",
+      "getConsumerParameters",
       [lobbyMiddleware.attemptedToJoinLobby],
-      lobbyController.setupPersonalConsumer
+      lobbyController.getConsumerParameters
     )
 
     .addRouteWithMiddleware(

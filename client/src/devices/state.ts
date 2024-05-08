@@ -3,16 +3,16 @@ import { createContext } from "react";
 export const MicrophonesContext = createContext<MediaDeviceInfo[]>([]);
 export const CamerasContext = createContext<MediaDeviceInfo[]>([]);
 
-export const SelectedCameraContext = createContext<MediaDeviceInfo | null>(
-  null
-);
-export const SelectedMicrophoneContext = createContext<MediaDeviceInfo | null>(
-  null
-);
+interface SelectedDeviceType {
+  device: MediaDeviceInfo;
+  update: (deviceID: string) => void;
+}
 
-export const UpdateSelectedCameraContext = createContext<
-  (device: string) => void
->(() => {});
-export const UpdateSelectedMicrophoneContext = createContext<
-  (device: string) => void
->(() => {});
+type SelectedMicrophoneContextType = SelectedDeviceType | null;
+type SelectedCameraContextType = SelectedDeviceType | null;
+
+export const SelectedCameraContext =
+  createContext<SelectedCameraContextType>(null);
+
+export const SelectedMicrophoneContext =
+  createContext<SelectedMicrophoneContextType>(null);

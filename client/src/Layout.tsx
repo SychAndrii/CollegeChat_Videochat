@@ -6,7 +6,9 @@ function Layout() {
   return (
     <DevicesProvider>
       <VideoCallProvider>
-        <Page />
+        <div>
+          <Page />
+        </div>
       </VideoCallProvider>
     </DevicesProvider>
   );

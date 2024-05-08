@@ -4,13 +4,10 @@ import {
   CamerasContext,
   SelectedCameraContext,
   SelectedMicrophoneContext,
-  UpdateSelectedCameraContext,
-  UpdateSelectedMicrophoneContext,
 } from "./state";
 
 const DevicesProvider = ({ children }: { children: React.ReactNode }) => {
   const [devices, setDevices] = useState<MediaDeviceInfo[]>([]);
-
   const [selectedMicrophoneID, setSelectedMicrophoneID] = useState<
     string | null
   >(localStorage.getItem("selectedMicrophoneID"));
@@ -18,49 +15,19 @@ const DevicesProvider = ({ children }: { children: React.ReactNode }) => {
     localStorage.getItem("selectedCameraID")
   );
 
-  const updateSelectedCamera = (deviceID: string) => {
-    console.log('UPDATING');
-    
-    const cameraExists = devices.filter(
-      (d) => d.kind === "videoinput" && d.deviceId === deviceID
-    );
-    console.log(cameraExists);
-    
-    if (cameraExists) {
-      setSelectedCameraID(deviceID);
-    }
-  };
+  const updateSelectedCamera = useCallback((deviceID: string) => {
+    setSelectedCameraID(deviceID);
+    localStorage.setItem("selectedCameraID", deviceID);
+  }, []);
 
-  const updateSelectedMicrophone = (deviceID: string) => {
-    const micExists = devices.filter(
-      (d) => d.kind === "audioinput" && d.deviceId === deviceID
-    );
-    if (micExists) {
-      setSelectedMicrophoneID(deviceID);
-    }
-  };
-
-  useEffect(() => {
-    if (selectedMicrophoneID) {
-      localStorage.setItem("selectedMicrophoneID", selectedMicrophoneID);
-    }
-    if (selectedCameraID) {
-      localStorage.setItem("selectedCameraID", selectedCameraID);
-    }
-  }, [selectedMicrophoneID, selectedCameraID]);
-
-  const cameras = useMemo(() => {
-    return devices.filter((d) => d.kind === "videoinput");
-  }, [devices]);
-
-  const microphones = useMemo(() => {
-    return devices.filter((d) => d.kind === "audioinput");
-  }, [devices]);
+  const updateSelectedMicrophone = useCallback((deviceID: string) => {
+    setSelectedMicrophoneID(deviceID);
+    localStorage.setItem("selectedMicrophoneID", deviceID);
+  }, []);
 
   const enumerateDevices = useCallback(async () => {
     try {
       const newDevices = await navigator.mediaDevices.enumerateDevices();
-      console.log(newDevices);
       setDevices(newDevices);
     } catch (error) {
       console.error("Failed to enumerate devices:", error);
@@ -69,32 +36,57 @@ const DevicesProvider = ({ children }: { children: React.ReactNode }) => {
 
   useEffect(() => {
     enumerateDevices();
+    const handleDeviceChange = () => enumerateDevices();
+    navigator.mediaDevices.addEventListener("devicechange", handleDeviceChange);
+    return () => {
+      navigator.mediaDevices.removeEventListener(
+        "devicechange",
+        handleDeviceChange
+      );
+    };
   }, [enumerateDevices]);
 
-  useEffect(() => {
-    localStorage.setItem("selectedMicrophoneID", selectedMicrophoneID || "");
-    localStorage.setItem("selectedCameraID", selectedCameraID || "");
-  }, [selectedMicrophoneID, selectedCameraID]);
+  const cameras = useMemo(
+    () => devices.filter((d) => d.kind === "videoinput"),
+    [devices]
+  );
+  const microphones = useMemo(
+    () => devices.filter((d) => d.kind === "audioinput"),
+    [devices]
+  );
+  const selectedMicrophoneInfo = useMemo(
+    () => microphones.find((d) => d.deviceId === selectedMicrophoneID),
+    [microphones, selectedMicrophoneID]
+  );
+  const selectedCameraInfo = useMemo(
+    () => cameras.find((d) => d.deviceId === selectedCameraID),
+    [cameras, selectedCameraID]
+  );
 
   return (
     <CamerasContext.Provider value={cameras}>
       <MicrophonesContext.Provider value={microphones}>
         <SelectedCameraContext.Provider
-          value={cameras?.find((d) => d.deviceId === selectedCameraID) || null}
+          value={
+            selectedCameraInfo
+              ? {
+                  device: selectedCameraInfo,
+                  update: updateSelectedCamera,
+                }
+              : null
+          }
         >
           <SelectedMicrophoneContext.Provider
             value={
-              microphones?.find((d) => d.deviceId === selectedMicrophoneID) ||
-              null
+              selectedMicrophoneInfo
+                ? {
+                    device: selectedMicrophoneInfo,
+                    update: updateSelectedMicrophone,
+                  }
+                : null
             }
           >
-            <UpdateSelectedCameraContext.Provider value={updateSelectedCamera}>
-              <UpdateSelectedMicrophoneContext.Provider
-                value={updateSelectedMicrophone}
-              >
-                {children}
-              </UpdateSelectedMicrophoneContext.Provider>
-            </UpdateSelectedCameraContext.Provider>
+            {children}
           </SelectedMicrophoneContext.Provider>
         </SelectedCameraContext.Provider>
       </MicrophonesContext.Provider>

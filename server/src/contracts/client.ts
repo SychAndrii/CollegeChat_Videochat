@@ -3,13 +3,12 @@ import { RtpParameters } from "mediasoup/node/lib/RtpParameters";
 import { RtpCapabilities } from "mediasoup/node/lib/RtpParameters";
 
 interface DomainConnectionDTO {
-  domain: {
     name: string;
-  }
 }
 
-export interface JoinLobbyClientDTO extends DomainConnectionDTO {
+export interface JoinLobbyClientDTO {
   lobbyCode: string;
+  domain: DomainConnectionDTO
 }
 
 export interface ConnectTransportClientDTO {
@@ -17,13 +16,13 @@ export interface ConnectTransportClientDTO {
   dtlsParameters: DtlsParameters;
 }
 
-export interface SharePersonalProducerClientDTO {
+export interface SendProducerParametersClientDTO {
   kind: "audio" | "video";
   rtpParameters: RtpParameters;
   transportID: string;
 }
 
-export interface SetupPersonalConsumerClientDTO {
+export interface GetConsumerParametersClientDTO {
   kind: "audio" | "video";
   rtpCapabilities: RtpCapabilities;
   transportID: string;

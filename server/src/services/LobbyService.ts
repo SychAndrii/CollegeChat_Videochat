@@ -13,6 +13,7 @@ import {
   CreateNewConsumerDTO,
   CreateNewProducerDTO,
   CreateTransportDTO,
+  GetExistingLobbyProducersDTO,
   GetRtpCapabilitiesDTO,
   JoinLobbyDTO,
   LeaveLobbyDTO,
@@ -35,6 +36,28 @@ class LobbyService {
   async getLobbyRtpCapabilities({ lobbyCode }: GetRtpCapabilitiesDTO) {
     const lobbyEnv = await this.getLobbyEnvByCode(lobbyCode);
     return lobbyEnv.router.rtpCapabilities;
+  }
+
+  async getOtherLobbyProducers({ lobbyCode, connectionID }: GetExistingLobbyProducersDTO) {
+    const lobbyEnv = await this.getLobbyEnvByCode(lobbyCode);
+
+    const existingProducers: {
+      producerID: string;
+      kind: "audio" | "video";
+    }[] = [];
+
+    lobbyEnv.connections.forEach((conn) => {
+      if (conn.id !== connectionID) {
+        conn.mediasoup.producers.forEach((producer) => {
+          existingProducers.push({
+            producerID: producer.id,
+            kind: producer.kind,
+          });
+        });
+      }
+    });
+
+    return { existingProducers };
   }
 
   async createNewConsumer(dto: CreateNewConsumerDTO) {
