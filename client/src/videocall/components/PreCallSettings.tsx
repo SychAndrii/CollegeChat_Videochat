@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/ui/card";
 import { Label } from "@/ui/label";
 import { Checkbox } from "@/ui/checkbox";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/ui/tabs";
+import { Spinner } from "@/ui/spinner";
 import Webcam from "react-webcam";
 
 import AudioVisualizer from "@/devices/components/AudioVisualiser";
@@ -23,9 +24,8 @@ const PreCallSettings = () => {
   const [micStream, openMicStream, closeMicStream] = useStreamManager(
     selectedMic?.device || null
   );
-  const [cameraStream, openCameraStream, closeCameraStream] = useStreamManager(
-    selectedCam?.device || null
-  );
+  const [cameraStream, openCameraStream, closeCameraStream, isLoading] =
+    useStreamManager(selectedCam?.device || null);
 
   useEffect(() => {
     setIsTestingMic(false);
@@ -58,7 +58,6 @@ const PreCallSettings = () => {
       setIsTestingCam(true);
     }
   };
-  
 
   return (
     <Tabs defaultValue="mic">
@@ -116,20 +115,21 @@ const PreCallSettings = () => {
           <CardContent className="space-y-4">
             <div className="space-y-1">
               <Label>Select your device</Label>
-              <CameraSelect />
+              <CameraSelect disabled={isLoading} />
             </div>
             <div className="space-y-1">
               <div className=" flex w-full justify-between items-center">
                 <Label>Test your camera</Label>
                 <Button
-                  disabled={selectedCam === null}
+                  disabled={selectedCam === null || isLoading}
                   onClick={toggleCamStream}
                 >
                   <span>{isTestingCam ? "Stop testing" : "Test camera"}</span>
                 </Button>
               </div>
               <div
-                style={{ width: "100%", height: "auto", background: "black" }}
+                className="relative w-full h-420px bg-black flex justify-center items-center"
+                style={{ height: "420px" }}
               >
                 {cameraStream && isTestingCam ? (
                   <Webcam
@@ -143,14 +143,10 @@ const PreCallSettings = () => {
                       objectFit: "cover",
                     }}
                   />
+                ) : isLoading ? (
+                  <Spinner />
                 ) : (
-                  <div
-                    style={{
-                      width: "100%",
-                      height: "420px",
-                      background: "black",
-                    }}
-                  ></div>
+                  <div className="w-full h-full"></div> // This keeps the black box visible when not loading
                 )}
               </div>
             </div>

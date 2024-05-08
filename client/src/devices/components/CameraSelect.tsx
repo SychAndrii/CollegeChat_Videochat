@@ -11,7 +11,9 @@ import {
 import useCameras from "../hooks/useCameras";
 import useSelectedCamera from "../hooks/useSelectedCamera";
 
-const CameraSelect = () => {
+const CameraSelect = ({disabled = false}: {
+  disabled?: boolean
+}) => {
   const cams = useCameras();
   const selectedCamera = useSelectedCamera();
 
@@ -25,6 +27,7 @@ const CameraSelect = () => {
         value={selectedCamera?.device.deviceId}
         onValueChange={cameraSelected}
         key="cams"
+        disabled={disabled}
       >
         <SelectTrigger className="w-[350px]">
           <SelectValue placeholder="Select a camera" />

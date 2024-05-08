@@ -1,10 +1,12 @@
 import { useState, useCallback } from "react";
 
-// Defining the type for the device argument
 type DeviceInfo = MediaDeviceInfo | null;
 
-export default function useStreamManager(device: DeviceInfo): [MediaStream | null, () => Promise<void>, () => void] {
+export default function useStreamManager(
+  device: DeviceInfo
+): [MediaStream | null, () => Promise<void>, () => void, boolean] {
   const [stream, setStream] = useState<MediaStream | null>(null);
+  const [loading, setLoading] = useState(false);
 
   const fetchStream = useCallback(async () => {
     if (!device || !device.deviceId) {
@@ -12,6 +14,7 @@ export default function useStreamManager(device: DeviceInfo): [MediaStream | nul
       return;
     }
 
+    setLoading(true);
     try {
       const constraints: MediaStreamConstraints = {};
       if (device.kind === "videoinput") {
@@ -28,15 +31,17 @@ export default function useStreamManager(device: DeviceInfo): [MediaStream | nul
     } catch (error) {
       console.error("Failed to get media stream", error);
       setStream(null);
+    } finally {
+      setLoading(false);
     }
-  }, [device?.deviceId]);  // Only depend on deviceId for changes
+  }, [device?.deviceId]);
 
   const closeStream = useCallback(() => {
     if (stream) {
-      stream.getTracks().forEach(track => track.stop());
+      stream.getTracks().forEach((track) => track.stop());
       setStream(null);
     }
   }, [stream]);
 
-  return [stream, fetchStream, closeStream];
+  return [stream, fetchStream, closeStream, loading];
 }
